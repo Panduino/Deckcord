@@ -1,5 +1,5 @@
 name: dev-build
-run-name: Build plugin for development
+run-name: Build Deckshark development plugin
 on:
   push:
     branches:
