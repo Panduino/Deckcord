@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - sharkord-client
   workflow_dispatch:
 
 jobs:
