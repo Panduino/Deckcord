@@ -2,7 +2,8 @@ import { definePlugin, PanelSection, PanelSectionRow, TextField, DialogButton, R
 import { call, toaster } from "@decky/api";
 import { useEffect, useState } from "react";
 import { FaComments } from "react-icons/fa";
-import { patchMenu } from "./patches/menuPatch";\nimport { routerHook } from "@decky/api";
+import { patchMenu } from "./patches/menuPatch";
+import { routerHook } from "@decky/api";
 
 declare global { interface Window { SHARKORD_TAB: any; } }
 
