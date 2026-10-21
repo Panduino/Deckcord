@@ -1,9 +1,11 @@
 import asyncio
+import sys
 import json
 from pathlib import Path
 from urllib.parse import urlparse
 from aiohttp import web, WSMsgType
-from decky import logger, DECKY_PLUGIN_SETTINGS_DIR
+from decky import logger, DECKY_PLUGIN_SETTINGS_DIR, DECKY_PLUGIN_DIR
+sys.path.append(DECKY_PLUGIN_DIR)
 from tab_utils.tab import create_sharkord_tab, setup_sharkord_tab, navigate_sharkord, setOSK
 from tab_utils.cdp import get_tab
 
@@ -27,6 +29,8 @@ class Plugin:
         await web.TCPSite(self.runner, "127.0.0.1", 65123).start()
         self.tab = await create_sharkord_tab()
         await setup_sharkord_tab(self.tab)
+        self.shared = await get_tab('SharedJSContext')
+        await self.shared.open_websocket()
         url = await self.get_url()
         if url:
             await navigate_sharkord(self.tab, url)
