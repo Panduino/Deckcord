@@ -1,11 +1,1 @@
-{
-  "name": "Deckcord",
-  "author": "marios8543",
-  "api_version": 1,
-  "flags": [],
-  "publish": {
-    "tags": ["discord", "chat"],
-    "description": "Easy access to Discord",
-    "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
-  }
-}
+{"name":"Deckshark","author":"Panduino (based on Deckcord by marios8543)","api_version":1,"flags":[],"publish":{"tags":["sharkord","chat","voice"],"description":"Sharkord web client for Steam Deck Game Mode","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"}}

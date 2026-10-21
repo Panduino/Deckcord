@@ -1,26 +1,17 @@
-# Deckcord
-## Discord on the Deck, made easy
+# Deckshark
+
+Sharkord in Steam Deck Game Mode, based on [Deckcord](https://github.com/marios8543/Deckcord).
 
 ## Features
-- Runs web discord as a separate tab in the background.
-- Open/Close easily while in-game from the main menu.
-- Mute/Deafen/Disconnect and check members in your channel from the QAM.
-- One-button post steam screenshots to your recent channels.
-- Show your current game as playing status.
-- Get notifications for DMs and pings in-game.
-- Push-to-talk support, with physical keybind to rear buttons. (R5 Button)
-- [Vencord](https://vencord.dev/) gets injected automatically before discord is loaded. It's needed to access a lot of the functionality that allows the plugin to do cool stuff, but also gives ya access to tons of other cool stuff.
-- Working screenshare with audio
+- Loads your existing Sharkord server in a Steam browser view (not a recreated client).
+- Steam menu entry and Decky shortcut.
+- HTTPS server URL setting.
+- Experimental microphone relay from Steam's main UI context into the Sharkord browser tab.
 
-## How to install  
-1. Enable *Developer Mode* in Decky General settings.
-2. Go to Developer in Decky settings.
-3. Type `http://tzatzikiweeb.moe/Deckcord.zip` in *Install Plugin from URL* and press install
+## Status
+**Experimental / hardware testing required.** SteamOS's embedded Chromium behavior and Sharkord's voice handling may need further fixes. Do not assume background microphone operation has been verified.
 
-### Deckcord is provided with no gurantee as for its functionality, and I offer no "official" support for it. You can ask in the relevant thread on the [Decky Discord](https://discord.com/invite/U88fbeHyzt) and I will try to help if it's something simple. If it breaks, I will try to fix it, but that's it.
+## Setup
+Build using `pnpm install && pnpm build`, install through Decky developer mode, enter your HTTPS Sharkord URL, and open Sharkord from the Steam menu.
 
-## Credits
-- Huge thanks to [@aagaming](https://github.com/AAGaming00) for his enormous contributions towards getting mic working on the SteamClient tab, as well as his general support throughout the development of this plugin.
-- Huge thanks to [@Epictek](https://github.com/Epictek) for his help in getting QR Code login working.
-
-- Huge thanks to [@jessebofill](https://github.com/jessebofill) for the menu patching code.
+The original Deckcord license is retained. The original Discord/Vencord code remains in the repository as unused reference files for now.

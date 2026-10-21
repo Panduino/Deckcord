@@ -1,99 +1,49 @@
-from pathlib import Path
-
-from aiohttp import ClientSession # type: ignore
-from .cdp import Tab, get_tab, get_tab_lambda
 from asyncio import sleep
-from ssl import create_default_context
+from pathlib import Path
+from .cdp import get_tab, get_tab_lambda
 
-async def create_discord_tab():
+async def create_sharkord_tab():
     while True:
         try:
-            tab = await get_tab("SharedJSContext")
+            shared = await get_tab("SharedJSContext")
+            await shared.open_websocket()
             break
-
-        except:
-            await sleep(0.1)
-
-    await tab.open_websocket()
-
-    while True:
-        await tab.evaluate("""
-                    if (window.DISCORD_TAB !== undefined) {
-                        window.DISCORD_TAB.m_browserView.SetVisible(false);
-                        window.DISCORD_TAB.Destroy();
-                        window.DISCORD_TAB = undefined;
-                    }
-                    window.DISCORD_TAB = window.DFL.Router.WindowStore.GamepadUIMainWindowInstance.CreateBrowserView("discord");
-                    window.DISCORD_TAB.WIDTH = 860;
-                    window.DISCORD_TAB.HEIGHT = 495;
-                    window.DISCORD_TAB.m_browserView.SetBounds(0,0, window.DISCORD_TAB.WIDTH, window.DISCORD_TAB.HEIGHT);
-                    window.DISCORD_TAB.m_browserView.LoadURL("data:text/plain,to_be_discord");
-                        
-                    DFL.Router.WindowStore.GamepadUIMainWindowInstance.m_VirtualKeyboardManager.IsShowingVirtualKeyboard.m_callbacks.m_vecCallbacks.push((e) => {
-                        if (!e) {
-                            const bounds = window.DISCORD_TAB.m_browserView.GetBounds();
-                            if (bounds.height != window.DISCORD_TAB.HEIGHT) {
-                                window.DISCORD_TAB.m_browserView.SetBounds(0,0, window.DISCORD_TAB.WIDTH, window.DISCORD_TAB.HEIGHT);
-                            }
-                        }
-                        else {
-                            const bounds = window.DISCORD_TAB.m_browserView.GetBounds();
-                            if (bounds.height != window.DISCORD_TAB.HEIGHT * 0.6) {
-                                window.DISCORD_TAB.m_browserView.SetBounds(0,0, window.DISCORD_TAB.WIDTH, window.DISCORD_TAB.HEIGHT * 0.6);
-                            }                           
-                        }
-                    });
-        """)
-        await sleep(3)
-
+        except Exception:
+            await sleep(1)
+    await shared.evaluate("""
+        if (window.SHARKORD_TAB) {
+            window.SHARKORD_TAB.m_browserView.SetVisible(false);
+            window.SHARKORD_TAB.Destroy();
+        }
+        window.SHARKORD_TAB = window.DFL.Router.WindowStore.GamepadUIMainWindowInstance.CreateBrowserView("sharkord");
+        window.SHARKORD_TAB.WIDTH = 860;
+        window.SHARKORD_TAB.HEIGHT = 495;
+        window.SHARKORD_TAB.m_browserView.SetBounds(0,0,860,495);
+        window.SHARKORD_TAB.m_browserView.LoadURL("data:text/plain,sharkord_waiting");
+        window.SHARKORD_TAB.m_browserView.SetVisible(false);
+    """)
+    for _ in range(30):
+        await sleep(1)
         try:
-            discord_tab = await get_tab_lambda(lambda tab: tab.url == "data:text/plain,to_be_discord")
+            tab = await get_tab_lambda(lambda t: t.url == "data:text/plain,sharkord_waiting")
+            await shared.close_websocket()
+            return tab
+        except Exception:
+            continue
+    await shared.close_websocket()
+    raise RuntimeError("Sharkord browser tab did not appear")
 
-            if discord_tab:
-                await tab.close_websocket()
-                return discord_tab
-
-        except:
-            pass
-
-
-async def fetch_vencord():
-    async with ClientSession() as session:
-        res = await session.get("https://raw.githubusercontent.com/Vencord/builds/main/browser.js",
-                                ssl=create_default_context(cafile="/etc/ssl/cert.pem"))
-
-        if res.ok:
-            return await res.text()
-
-
-async def setup_discord_tab(tab: Tab):
+async def setup_sharkord_tab(tab):
     await tab.open_websocket()
     await tab.enable()
-    await tab._send_devtools_cmd({
-        "method": "Page.addScriptToEvaluateOnNewDocument",
-        "params": {
-            "source": 
-                "Object.hasOwn = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop)" +
-                await fetch_vencord() +
-                open(Path(__file__).parent.parent.joinpath("deckcord_client.js"), "r").read() +
-                open(Path(__file__).parent.parent.joinpath("webrtc_client.js"), "r").read(),
-            "runImmediately": True
-        }
-    })
+    script = Path(__file__).parent.parent.joinpath("sharkord_client.js").read_text()
+    await tab._send_devtools_cmd({"method":"Page.addScriptToEvaluateOnNewDocument","params":{"source":script,"runImmediately":True}})
 
+async def navigate_sharkord(tab, url):
+    await tab._send_devtools_cmd({"method":"Page.navigate","params":{"url":url}})
 
-async def boot_discord(tab: Tab):
-    await tab._send_devtools_cmd({
-        "method": "Page.navigate",
-        "params": {
-            "url": "https://discord.com/app",
-            "transitionType": "address_bar"
-        }
-    })
-
-
-async def setOSK(tab: Tab, state):
-    if state:
-        await tab.evaluate("DISCORD_TAB.m_virtualKeyboardHost.m_showKeyboard()")
-    else:
-        await tab.evaluate("DISCORD_TAB.m_virtualKeyboardHost.m_hideKeyboard()")
+async def setOSK(tab, state):
+    shared = await get_tab("SharedJSContext")
+    await shared.open_websocket()
+    await shared.evaluate("window.SHARKORD_TAB.m_virtualKeyboardHost.m_" + ("showKeyboard" if state else "hideKeyboard") + "()")
+    await shared.close_websocket()

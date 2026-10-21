@@ -2,7 +2,7 @@
 
 import { afterPatch, Dropdown, findInReactTree, FooterLegendProps, getReactRoot } from "@decky/ui"
 import { FC, ReactElement, ReactNode } from "react"
-import { FaDiscord } from "react-icons/fa"
+import { FaComments } from "react-icons/fa"
 
 interface MainMenuItemPropsBase {
     route: string
@@ -47,15 +47,15 @@ export const patchMenu = () => {
 
                 const newItem =
                     <MenuItemWrapper
-                        key={'deckcord'}
-                        route={'/discord'}
-                        label='Discord'
+                        key={'deckshark'}
+                        route={'/sharkord'}
+                        label='Sharkord'
                         onFocus={menuItem.props.onFocus}
                         useIconAsProp={!!menuItem.props.icon}
                         MenuItemComponent={menuItem.type}
                     />
 
-                const browserPosition = Number.parseInt(localStorage.getItem("DECKCORD_MENU_POSITION") || "3" as string);
+                const browserPosition = Number.parseInt(localStorage.getItem("DECKSHARK_MENU_POSITION") || "3" as string);
 
                 if (browserPosition === 9) menuItems.splice(itemIndexes[itemIndexes.length - 1] + 1, 0, newItem)
                 else menuItems.splice(itemIndexes[browserPosition - 1], 0, newItem)
@@ -102,17 +102,17 @@ const MenuItemWrapper: FC<MenuItemWrapperProps> = ({ MenuItemComponent, label, u
         ],
         selectedOption: 1,
         onChange: (data: any) => {
-            localStorage.setItem("DECKCORD_MENU_POSITION", data.data);
+            localStorage.setItem("DECKSHARK_MENU_POSITION", data.data);
             patchMenu();
         }
     });
 
-    (props as any)[useIconAsProp ? 'icon' : 'children'] = <FaDiscord />;
+    (props as any)[useIconAsProp ? 'icon' : 'children'] = <FaComments />;
 
     return (
         <MenuItemComponent
             {...props}
-            label={'Discord'}
+            label={'Sharkord'}
             onSecondaryActionDescription={"Change Position"}
             onSecondaryButton={(_) => choosePosition.ShowMenu()}
         />

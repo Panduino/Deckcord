@@ -1,240 +1,90 @@
-import {
-  definePlugin,
-  PanelSection,
-  PanelSectionRow,
-  staticClasses,
-  Router,
-  sleep,
-  Focusable,
-} from "@decky/ui";
-import { FaDiscord } from "react-icons/fa";
+import { definePlugin, PanelSection, PanelSectionRow, TextField, DialogButton, Router, staticClasses } from "@decky/ui";
+import { call, toaster } from "@decky/api";
+import { useEffect, useState } from "react";
+import { FaComments } from "react-icons/fa";
+import { patchMenu } from "./patches/menuPatch";\nimport { routerHook } from "@decky/api";
 
-import { patchMenu } from "./patches/menuPatch";
-import { DiscordTab } from "./components/DiscordTab";
-import {
-  useDeckcordState,
-  isLoaded,
-  isLoggedIn,
-} from "./hooks/useDeckcordState";
+declare global { interface Window { SHARKORD_TAB: any; } }
 
-import { MuteButton } from "./components/buttons/MuteButton";
-import { DeafenButton } from "./components/buttons/DeafenButton";
-import { DisconnectButton } from "./components/buttons/DisconnectButton";
-import { PushToTalkButton } from "./components/buttons/PushToTalk";
-import {
-  VoiceChatChannel,
-  VoiceChatMembers,
-} from "./components/VoiceChatViews";
-import { UploadScreenshot } from "./components/UploadScreenshot";
-import { OpenDiscordButton } from "./components/buttons/OpenCloseDiscordButton";
-import {
-  call,
-  routerHook,
-  toaster,
-  addEventListener,
-  removeEventListener,
-} from "@decky/api";
-
-declare global {
-  interface Window {
-    DISCORD_TAB: any;
-    DECKCORD: {
-      dispatchNotification: any;
-      MIC_PEER_CONNECTION: any;
+const Browser = () => {
+  useEffect(() => {
+    const tab = window.SHARKORD_TAB;
+    if (tab) {
+      tab.m_browserView.SetVisible(true);
+      tab.m_browserView.SetFocus(true);
+    }
+    return () => {
+      if (window.SHARKORD_TAB) {
+        window.SHARKORD_TAB.m_browserView.SetVisible(false);
+        window.SHARKORD_TAB.m_browserView.SetFocus(false);
+      }
     };
-  }
-}
+  }, []);
+  return <div />;
+};
 
 const Content = () => {
-  const state = useDeckcordState();
-  if (!state?.loaded) {
-    return (
-      <div style={{ display: "flex", justifyContent: "center" }}>
-        <h2>Initializing...</h2>
-      </div>
-    );
-  } else if (!state?.logged_in) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          flexDirection: "column",
-          paddingLeft: "15px",
-        }}
-      >
-        <h2>Not logged in!</h2>
-        <h3>
-          Open{" "}
-          <b>
-            <FaDiscord />
-            Discord
-          </b>{" "}
-          from the Steam Menu and login.
-        </h3>
-        <h4>If you did not logout, just wait for a few seconds.</h4>
-      </div>
-    );
-  } else {
-    return (
-      <PanelSection>
-        <div style={{ marginBottom: "12px" }}>
-          <PanelSectionRow>
-            <OpenDiscordButton />
-          </PanelSectionRow>
-        </div>
-        <div style={{ marginBottom: "12px" }}>
-          <PanelSectionRow>
-            <Focusable style={{ display: "flex", justifyContent: "center" }}>
-              <MuteButton />
-              <DeafenButton />
-              <DisconnectButton />
-            </Focusable>
-          </PanelSectionRow>
-        </div>
-        <div style={{ marginBottom: "12px" }}>
-          <PanelSectionRow>
-            <div style={{ display: "flex", justifyContent: "center" }}>
-              <PushToTalkButton />
-            </div>
-          </PanelSectionRow>
-        </div>
-        <hr></hr>
-        <div style={{ marginBottom: "12px" }}>
-          <PanelSectionRow>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
-              <img
-                src={
-                  "https://cdn.discordapp.com/avatars/" +
-                  state?.me?.id +
-                  "/" +
-                  state?.me?.avatar +
-                  ".webp"
-                }
-                width={32}
-                height={32}
-                style={{ display: "block", borderRadius: "50%" }}
-              />
-              {state?.me?.username}
-            </span>
-          </PanelSectionRow>
-        </div>
-        <div style={{ marginBottom: "12px" }}>
-          <PanelSectionRow>
-            <VoiceChatChannel />
-            <VoiceChatMembers />
-          </PanelSectionRow>
-        </div>
-        <hr></hr>
-        <PanelSectionRow>
-          <UploadScreenshot />
-        </PanelSectionRow>
-      </PanelSection>
-    );
-  }
+  const [url, setUrl] = useState("");
+  const [saved, setSaved] = useState(false);
+  useEffect(() => { call<[], string>("get_url").then(v => {setUrl(v || ""); setSaved(!!v);}); }, []);
+  return <PanelSection>
+    <PanelSectionRow><TextField label="Sharkord server (HTTPS)" value={url} onChange={e => {setUrl(e.target.value); setSaved(false);}} /></PanelSectionRow>
+    <PanelSectionRow><DialogButton onClick={async () => {
+      try { await call("set_url", url); setSaved(true); toaster.toast({title:"Deckshark",body:"Server saved"}); }
+      catch(e) { toaster.toast({title:"Deckshark",body:String(e)}); }
+    }}>Save server</DialogButton></PanelSectionRow>
+    <PanelSectionRow><DialogButton disabled={!saved} onClick={() => Router.Navigate("/sharkord")}>Open Sharkord</DialogButton></PanelSectionRow>
+    <PanelSectionRow><div>Sharkord runs in a separate Steam browser view. Voice audio should continue when the menu closes; microphone compatibility requires Steam Deck testing.</div></PanelSectionRow>
+  </PanelSection>;
 };
 
 export default definePlugin(() => {
-  window.DECKCORD = {
-    dispatchNotification: (payload: { title: string; body: string }) => {
-      console.log("Dispatching Deckcord notification: ", payload);
-      toaster.toast(payload);
-    },
-    MIC_PEER_CONNECTION: undefined,
-  };
-
-  let peerConnection: RTCPeerConnection;
-  const webrtcEventListener = async (data: any) => {
-    if (!data.webrtc) return;
-    data = data.webrtc;
-    console.log(data);
-    if (data.offer) {
-      console.log("Deckcord: Starting RTC connection");
-      if (peerConnection) peerConnection.close();
-      peerConnection = new RTCPeerConnection();
-      window.DECKCORD.MIC_PEER_CONNECTION = peerConnection;
-      const localStream = await navigator.mediaDevices.getUserMedia({
-        video: false,
-        audio: {
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false
-        },
-      });
-      localStream.getTracks().forEach((track) => {
-        peerConnection.addTrack(track, localStream);
-      });
-      await peerConnection.setRemoteDescription(
-        new RTCSessionDescription(data.offer)
-      );
-      const answer = await peerConnection.createAnswer();
-      await peerConnection.setLocalDescription(answer);
-      console.log("Deckcord: Sending RTC Answer");
-      await call("mic_webrtc_answer", answer);
-    } else if (data.ice) {
+  const unpatch = patchMenu();\n  routerHook.addRoute("/sharkord", () => <Browser />);
+  let ws: WebSocket | undefined;
+  let peer: RTCPeerConnection | undefined;
+  let stream: MediaStream | undefined;
+  let reconnect: ReturnType<typeof setTimeout> | undefined;
+  let disposed = false;
+  const connect = () => {
+    if (disposed) return;
+    ws = new WebSocket("ws://127.0.0.1:65123/signal?role=decky");
+    ws.onmessage = async e => {
       try {
-        while (peerConnection.remoteDescription == null) await sleep(10);
-        await peerConnection.addIceCandidate(data.ice);
-      } catch (e) {
-        console.error("Deckcord: Error adding received ice candidate", e);
-      }
-    }
-  };
-  addEventListener("state", webrtcEventListener);
-
-  let settingsChangeUnregister: any;
-  const appLifetimeUnregister =
-    SteamClient.GameSessions.RegisterForAppLifetimeNotifications(async () => {
-      await sleep(500);
-      setPlaying();
-    }).unregister;
-  const unpatchMenu = patchMenu();
-
-  const setPlaying = () => {
-    const app = Router.MainRunningApp;
-    call("set_rpc", app !== undefined ? app?.display_name : null);
-  };
-
-  let lastDisplayIsExternal = false;
-  (async () => {
-    await isLoaded();
-
-    settingsChangeUnregister = SteamClient.Settings.RegisterForSettingsChanges(
-      async (settings: any) => {
-        if (settings.bDisplayIsExternal != lastDisplayIsExternal) {
-          lastDisplayIsExternal = settings.bDisplayIsExternal;
-          const bounds: any = await call("get_screen_bounds");
-          window.DISCORD_TAB.HEIGHT = bounds.height;
-          window.DISCORD_TAB.WIDTH = bounds.width;
-          window.DISCORD_TAB.m_browserView.SetBounds(
-            0,
-            0,
-            bounds.width,
-            bounds.height
-          );
+        const msg = JSON.parse(e.data);
+        if (msg.type === "offer") {
+          peer?.close();
+          stream?.getTracks().forEach(t => t.stop());
+          peer = new RTCPeerConnection();
+          stream = await navigator.mediaDevices.getUserMedia({audio:true, video:false});
+          stream.getTracks().forEach(t => peer!.addTrack(t, stream!));
+          peer.onicecandidate = ev => {
+            if (ev.candidate && ws?.readyState === WebSocket.OPEN)
+              ws.send(JSON.stringify({type:"ice", candidate:ev.candidate}));
+          };
+          await peer.setRemoteDescription(msg.sdp);
+          const answer = await peer.createAnswer();
+          await peer.setLocalDescription(answer);
+          ws?.send(JSON.stringify({type:"answer",sdp:peer.localDescription}));
+        } else if (msg.type === "ice" && peer) {
+          await peer.addIceCandidate(msg.candidate);
         }
-      }
-    );
-    await isLoggedIn();
-    setPlaying();
-  })();
-
-  routerHook.addRoute("/discord", () => {
-    return <DiscordTab />;
-  });
-
-  return {
-    title: <div className={staticClasses.Title}>Deckcord</div>,
-    content: <Content />,
-    icon: <FaDiscord />,
-    onDismount() {
-      unpatchMenu();
-      removeEventListener("webrtc", webrtcEventListener);
-      try {
-        appLifetimeUnregister();
-        settingsChangeUnregister();
-      } catch (error) { }
-    },
-    alwaysRender: true,
+      } catch(err) { console.error("Deckshark microphone bridge:",err); }
+    };
+    ws.onclose = () => { if (!disposed) reconnect = setTimeout(connect, 2000); };
   };
+  connect();
+  return {
+    title:<div className={staticClasses.Title}>Deckshark</div>,
+    icon:<FaComments />,
+    content:<Content />,
+    onDismount() {
+      disposed = true;
+      if (reconnect) clearTimeout(reconnect);
+      ws?.close(); peer?.close(); stream?.getTracks().forEach(t => t.stop());
+      unpatch();
+      routerHook.removeRoute("/sharkord");
+    },
+    alwaysRender:true,
+  };
+  function routerCleanup() { /* Route is managed by Decky plugin lifecycle. */ }
 });
